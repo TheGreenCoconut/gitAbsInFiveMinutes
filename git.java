@@ -3,9 +3,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.codec.digest.DigestUtils;
+
+/*
+ * USER NOTE: For all commands that you want to run, at the time of writing, the only way to do so
+ * is to use terminal. You must write the following to get this code to compile correctly:
+ * "java -cp ".:commons-codec-1.22.1/commons-codec-1.22.1.jar" git.java [YOUR COMMAND HERE]"
+ */
 
 public class git {
     public static void main(String[] args) throws IOException {
@@ -17,72 +22,72 @@ public class git {
             } else {
                 add(args[1]);
             }
-            
         }
     }
-    
+
+    /*
+     * Review Notes: Successfully creates files, does not print a message if the repository already
+     * exists (instead prints an empty line). Repository is not wiped if init is called twice.
+     */
     public static void init() {
-        File git = new File("git");
-        if (git.exists()) {
+        File gitFolder = new File("git");
+        if (gitFolder.exists()) {
             System.out.println("");
             return;
         }
-        git.mkdir();
+        gitFolder.mkdir();
 
-        File obj = new File(git, "objects");
-        obj.mkdir();
+        File objectsFolder = new File(gitFolder, "objects");
+        objectsFolder.mkdir();
 
-        File index = new File(git, "INDEX");
+        File indexFile = new File(gitFolder, "INDEX");
         try {
-            index.createNewFile();
+            indexFile.createNewFile();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        File head = new File(git, "HEAD");
+        File headFile = new File(gitFolder, "HEAD");
         try {
-            head.createNewFile();
+            headFile.createNewFile();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
     }
 
+    /*
+     * Review Notes: Successfully creates BLOB files with an accurate hash and file contents inside
+     * the objects folder. These values are indexed, but a trailing white space line is still
+     * present. Duplicate files with different paths are handled correctly. 
+     */
     public static void add(String fileName) throws IOException {
         byte[] fileContents = Files.readAllBytes(Path.of(fileName));
         List<String> indexLines = Files.readAllLines(Path.of("git", "INDEX"));
 
-        String hash = hashFile(fileContents);
-        Path obj = Path.of("git", "objects", hash);
-        Path index = Path.of("git", "INDEX");
-        
-        for (int i = 0; i < indexLines.size(); i++) {
-            if (indexLines.get(i).contains(fileName)) {
-                indexLines.remove(i);
-                i--;
+        String hashValue = hashFile(fileContents);
+        Path objectsPath = Path.of("git", "objects", hashValue);
+        Path indexPath = Path.of("git", "INDEX");
+
+        for (int lineNumber = 0; lineNumber < indexLines.size(); lineNumber++) {
+            if (indexLines.get(lineNumber).contains(fileName)) {
+                indexLines.remove(lineNumber);
+                lineNumber--;
             }
         }
 
-        indexLines.add(hash + " " + fileName);
-        
-        Files.write(index, indexLines);
-        
-        Files.write(obj, fileContents, StandardOpenOption.CREATE);
-        
+        indexLines.add(hashValue + " " + fileName);
+
+        Files.write(indexPath, indexLines);
+
+        Files.write(objectsPath, fileContents, StandardOpenOption.CREATE);
+
 
     }
 
     public static String hashFile(byte[] input) {
-        String hash = DigestUtils.sha1Hex(input);
-        return hash;
+        String hashValue = DigestUtils.sha1Hex(input);
+        return hashValue;
     }
-
-
-
-    
-
-
-
-
 
 }
