@@ -25,10 +25,6 @@ public class git {
         }
     }
 
-    /*
-     * Review Notes: Successfully creates files, does not print a message if the repository already
-     * exists (instead prints an empty line). Repository is not wiped if init is called twice.
-     */
     public static void init() {
         File gitFolder = new File("git");
         if (gitFolder.exists()) {
@@ -56,14 +52,11 @@ public class git {
 
     }
 
-    /*
-     * Review Notes: Successfully creates BLOB files with an accurate hash and file contents inside
-     * the objects folder. These values are indexed, but a trailing white space line is still
-     * present. Duplicate files with different paths are handled correctly. 
-     */
     public static void add(String fileName) throws IOException {
         byte[] fileContents = Files.readAllBytes(Path.of(fileName));
         List<String> indexLines = Files.readAllLines(Path.of("git", "INDEX"));
+
+        String filePath = "gitAbsInFiveMinutes/" + fileName;
 
         String hashValue = hashFile(fileContents);
         Path objectsPath = Path.of("git", "objects", hashValue);
@@ -71,17 +64,26 @@ public class git {
 
         for (int lineNumber = 0; lineNumber < indexLines.size(); lineNumber++) {
             if (indexLines.get(lineNumber).contains(fileName)) {
+                if (indexLines.get(lineNumber).contains(hashValue)) {
+                    return;
+                }
                 indexLines.remove(lineNumber);
                 lineNumber--;
             }
         }
 
-        indexLines.add(hashValue + " " + fileName);
+        indexLines.add(hashValue + " " + filePath);
 
-        Files.write(indexPath, indexLines);
+        for (int i = 0; i < indexLines.size(); i++) {
+            if (i == indexLines.size() - 1) {
+                Files.writeString(indexPath, indexLines.get(i));
+            }
+            Files.writeString(indexPath, indexLines.get(i) + "\n");
+
+        }
+        Files.writeString(indexPath, String.join("\n", indexLines));
 
         Files.write(objectsPath, fileContents, StandardOpenOption.CREATE);
-
 
     }
 
